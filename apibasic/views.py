@@ -6,6 +6,10 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import responses,Response
 from rest_framework import status
+from rest_framework.views import APIView
+from django.http import Http404
+from rest_framework import mixins
+from rest_framework import generics
 
 # Create your views here.
 @csrf_exempt
@@ -89,4 +93,86 @@ def article_detailapiview(request,pk):
     elif request.method == 'DELETE':
         article.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+class ArticleListClassview(APIView):
+
+    def get(self, request, format=None):
+        articles = Article.objects.all()
+        serializer = ArticleModelSerializer(articles, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+    def post(self, request, format=None):
+        serializer = ArticleModelSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ArticleDetailClassview(APIView):
+
+    def get_object(self, pk):
+        try:
+            return Article.objects.get(pk=pk)
+        except Article.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        article = self.get_object(pk)
+        serializer = ArticleModelSerializer(article)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        article= self.get_object(pk)
+        serializer = ArticleModelSerializer(article, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        article = self.get_object(pk)
+        Article.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class ArticleListMixins(mixins.ListModelMixin,
+                  mixins.CreateModelMixin,
+                  generics.GenericAPIView):
+    queryset = Article.objects.all()
+    serializer_class = ArticleModelSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class ArticaldetailMixins(mixins.RetrieveModelMixin,
+                    mixins.UpdateModelMixin,
+                    mixins.DestroyModelMixin,
+                    generics.GenericAPIView):
+    queryset = Article.objects.all()
+    serializer_class = ArticleModelSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+class articleGenericList(generics.ListCreateAPIView):
+    queryset = Article.objects.all()
+    serializer_class = ArticleModelSerializer
+
+
+class SnippetDetailGeneric(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Article.objects.all()
+    serializer_class = ArticleModelSerializer
+
+
 

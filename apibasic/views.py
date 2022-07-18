@@ -1,3 +1,4 @@
+from django.contrib.auth import authenticate
 from django.shortcuts import render
 from django.http import HttpResponse,JsonResponse
 from rest_framework.parsers import  JSONParser
@@ -10,6 +11,8 @@ from rest_framework.views import APIView
 from django.http import Http404
 from rest_framework import mixins
 from rest_framework import generics
+from django.contrib.auth.models import User
+from rest_framework import viewsets
 
 # Create your views here.
 @csrf_exempt
@@ -175,4 +178,30 @@ class SnippetDetailGeneric(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ArticleModelSerializer
 
 
+class UserList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
+
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+class UserLoginView(APIView):
+  def post(self, request, format=None):
+    serializer = UserLoginSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    username = serializer.data.get('username')
+    password = serializer.data.get('password')
+    user = authenticate(username=username, password=password)
+    if user is not None:
+
+      return Response({'msg':'Login Success'}, status=status.HTTP_200_OK)
+    else:
+      return Response({'errors':{'non_field_errors':['Email or Password is not Valid']}}, status=status.HTTP_404_NOT_FOUND)
+
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+
+    queryset = User.objects.all()
+    serializer_class = UserSerializer

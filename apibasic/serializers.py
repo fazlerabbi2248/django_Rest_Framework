@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from apibasic.models import *
+from django.contrib.auth.models import User
 
 class ArticleSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=100)
@@ -23,5 +24,18 @@ class ArticleModelSerializer(serializers.ModelSerializer):
         model = Article
         fields = ['id','title','author']
 
+class UserSerializer(serializers.ModelSerializer):
+
+
+    class Meta:
+        model = User
+        fields = ['id', 'username']
+
+
+class UserLoginSerializer(serializers.ModelSerializer):
+  username = serializers.CharField(max_length=255)
+  class Meta:
+    model = User
+    fields = ['username', 'password']
 
 
